@@ -142,7 +142,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 						newRxPacketUart1.checksum = byteRxUart1;
 						// Se verifica si el checksum es correcto
 						if(1) {
-							sendACK(&huart1, newRxPacketUart1);
 							// Se analiza si el paquete es para el dispositivo o no
 							if(newRxPacketUart1.destination == 0xFF || newRxPacketUart1.destination == device.id) {
 								// Se actua dependiendo el mensaje
@@ -251,13 +250,13 @@ void manageUserMessage(uint8_t length, char userMessage[20]) {
 	} else if(memcmp(key, ask, sizeof(ask)) == 0) {
 		// Se pide la magnitud a un nodo especifico
 		char dstId = key[3];
-		uint8_t dst = '0' + dstId;
+		uint8_t dst = dstId - '0';
 		if(memcmp(value, lgt, sizeof(lgt)) == 0) {
-				uint8_t payload[8] = "giv:tmp;"; // payload: giv:tmp;
-				createAndSendPacket(&huart1, device.id, dst, 8, payload);
+			uint8_t payload[8] = "giv:lig;"; // payload: giv:lig;
+			createAndSendPacket(&huart1, device.id, dst, 8, payload);
 
 		} else if(memcmp(value, tmp, sizeof(tmp)) == 0) {
-			uint8_t payload[8] = "giv:lig;"; // payload: giv:lig;
+			uint8_t payload[8] = "giv:tmp;"; // payload: giv:tmp;
 			createAndSendPacket(&huart1, device.id, dst, 8, payload);
 
 		} else if(memcmp(value, pos, sizeof(pos)) == 0) {
@@ -287,7 +286,7 @@ void manageUserMessage(uint8_t length, char userMessage[20]) {
 	} else {
 		// Se le contesta al usuario que el mensaje no fue reconocido
 		char payload[19] = "Comando incorrecto;";
-		sendToUser(&huart3,19,payload);
+		sendToUser(&huart3, 19, payload);
 	}
 }
 
@@ -314,9 +313,9 @@ void managePacket(UART_HandleTypeDef* huart, packet packet) {
 		payload[5] = ':';
 		uint8_t i = 0;
 		for(i = 0; i < 4; i++) {
-			payload[6 + i] = packet.payload[5 + i];
+			payload[6 + i] = packet.payload[4 + i];
 		}
-		payload[11] = ';';
+		payload[10] = ';';
 		sendToUser(&huart3, 11, payload);
 
 	} else if(memcmp(payloadKey, lig, sizeof(payloadKey)) == 0) {
@@ -330,9 +329,9 @@ void managePacket(UART_HandleTypeDef* huart, packet packet) {
 		payload[5] = ':';
 		uint8_t i = 0;
 		for(i = 0; i < 4; i++) {
-			payload[6 + i] = packet.payload[5 + i];
+			payload[6 + i] = packet.payload[4 + i];
 		}
-		payload[11] = ';';
+		payload[10] = ';';
 		sendToUser(&huart3, 11, payload);
 	} else if(memcmp(payloadKey, pos, sizeof(payloadKey)) == 0) {
 		// Se el envia al usuario la posicion que llego
@@ -344,8 +343,8 @@ void managePacket(UART_HandleTypeDef* huart, packet packet) {
 		payload[4] = 'S';
 		payload[5] = ':';
 		uint8_t i = 0;
-		for(i = 0; i < 20; i++) {
-			payload[6 + i] = packet.payload[5 + i];
+		for(i = 0; i < 21; i++) {
+			payload[6 + i] = packet.payload[4 + i];
 		}
 		payload[25] = ';';
 		sendToUser(&huart3, 26, payload);
@@ -360,14 +359,15 @@ void askDataTask(void const * argument) {
 	while(1) {
 		if(timerTemp >= periodSettings.periodTemp) {
 			//Solicito temperatura
-			uint8_t payload[] = "giv:tmp;";
+			uint8_t payload[8] = "giv:tmp;";
 			createAndSendPacket(&huart1, device.id, 0xFF, 8, payload);
 			timerTemp = 0;
 		}
 
 		if(timerLight >= periodSettings.periodLgt) {
 			//Solicito luz
-			uint8_t payload[] = "giv:lig;";
+			osDelay(100);
+			uint8_t payload[8] = "giv:lig;";
 			createAndSendPacket(&huart1, device.id, 0xFF, 8, payload);
 			timerLight = 0;
 		}
