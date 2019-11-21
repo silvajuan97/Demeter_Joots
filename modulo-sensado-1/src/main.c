@@ -26,11 +26,10 @@ void Error_Handler(void);
 // Variables del sensado de temperatura
 ADC_HandleTypeDef hADC1;
 __IO uint16_t ConvertedValue;
-uint32_t ventana[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 uint8_t indexLight = 0;
 //Variables que contienen las mediciones
 uint16_t temp = 0;
-uint16_t light = 0; // en Hz
+uint16_t light = 100; // en Hz
 
 deviceInfo device;
 
@@ -60,9 +59,9 @@ int main(void)
 	osThreadCreate (osThread(temperatureSensor), NULL); //Crea hilo
 
 
-	char latitudeTemp[10] = "-28.011792";
-	char longitudeTemp[10] = "-27.580895";
-	device.id = 2;
+	char latitudeTemp[10] = "-18.011792";
+	char longitudeTemp[10] = "-17.580895";
+	device.id = 1;
 	strcpy(device.latitude, latitudeTemp);
 	strcpy(device.longitude, longitudeTemp);
 
@@ -298,7 +297,6 @@ void ADCIRQHook (uint16_t ConversorAD) {
 void ICTimerHook (uint32_t CapturedValue)
 {
 	uint32_t numero_ciclos = 0;
-	//uint32_t frecuencia_promedio = 0;
 	static uint32_t anterior = 0;
 	// Utilice la Constante FTIM2 para calcular la frecuencia!!!
 	#define TIMERFS (uint32_t) 4294967295 //Full scale timer 2^(32)-1
@@ -308,7 +306,6 @@ void ICTimerHook (uint32_t CapturedValue)
 		numero_ciclos += TIMERFS;
 	}
 	//Coloco la captura actual como anterior para la siguiente vez que se ejecute esta funcion
-
 
 	anterior = CapturedValue;
 	light = FTIM2/ numero_ciclos;
